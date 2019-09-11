@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 
+# utility functions for yolo.
 def convolutional(input_data, filters_shape, trainable, name, downsample=False, activate=True, bn=True):
     with tf.variable_scope(name):
         if downsample:
