@@ -60,9 +60,11 @@ class Dataset(object):
         image, bboxes = preprocess_detection(image, target_size, bboxes)
         return image, bboxes
 
-    def preprocess_true_boxes(self, bboxes):
-        pass
-
+    def preprocess_true_boxes(self, bboxes, output_size):
+        label = [np.zeros((output_size[0], output_size[1], self.anchors_per_scale,
+                           5 + self.num_classes)) for _ in range(3)]
+        boxes_xywh = [np.zeros((self.max_bbox_per_scale, 4)) for _ in range(3)]
+        bbox_count = np.zeros(3)  # number of boxes in each scale
 
     def __iter__(self):
         return self
