@@ -38,7 +38,12 @@ def darknet53(input_data, trainable):
         for i in range(4):
             input_data = residual_block(input_data, 1024, 512, 1024, trainable=trainable, name='residual%d' % (i+19))
 
-        return route_1, route_2, input_data
+        output = input_data
+
+        # route_1: stride 8
+        # route_2: stride 16
+        # output: stride 32
+        return route_1, route_2, output
 
 
 if __name__ == '__main__':
