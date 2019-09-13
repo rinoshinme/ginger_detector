@@ -40,6 +40,7 @@ def pascal_to_yolo(voc_root, voc_names, target_txt, phase):
 if __name__ == '__main__':
     if os_type == 'Windows':
         src_path = r'D:\data\VOCdevkit\VOC2007'
-        pascal_to_yolo(src_path, VOC_NAMES, abs_path('config/data/train.txt'), 'train')
     else:
-        pass
+        src_path = '/Users/liyu/data/VOCdevkit/VOC2007'
+
+    pascal_to_yolo(src_path, VOC_NAMES, abs_path('config/data/train.txt'), 'train')

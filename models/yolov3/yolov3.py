@@ -2,28 +2,22 @@ import tensorflow as tf
 import numpy as np
 from backend.darknet53 import darknet53
 from utils import layers
-from utils.io import read_class_names, read_anchors
-
-# default YoloV3 parameters
-STRIDES = [8, 16, 32]
-CLASS_NAME_FILE = '../../config/classes/voc.names'
-ANCHORS_FILE = '../../config/anchors/baseline_anchors.txt'
-ANCHOR_PER_SCALE = 3
-IOU_LOSS_THRESH = 0.5
-UPSAMPLE_METHOD = 'resize'
+from utils.io import read_anchors
+from utils import bbox_tf
+from config import ANCHORS_FILE
 
 
 class YoloV3(object):
-    def __init__(self, inputs, trainable):
+    def __init__(self, inputs, num_classes, trainable=False):
         self.trainable = trainable
-        self.classes = read_class_names(CLASS_NAME_FILE)
-        self.anchors = read_anchors(ANCHORS_FILE)
+        self.num_classes = num_classes
 
-        self.num_classes = len(self.classes)
-        self.strides = STRIDES
-        self.anchor_per_scale = ANCHOR_PER_SCALE
-        self.iou_loss_thresh = IOU_LOSS_THRESH
-        self.upsample_method = UPSAMPLE_METHOD
+        # set yolo parameters
+        self.anchors = read_anchors(ANCHORS_FILE)
+        self.strides = np.array([8, 16, 32])
+        self.anchor_per_scale = 3
+        self.iou_loss_thresh = 0.5
+        self.upsample_method = 'resize'
 
         # build output tensors
         self.conv_lbbox, self.conv_mbbox, self.conv_sbbox = self._build_network(inputs)
@@ -139,13 +133,13 @@ class YoloV3(object):
         respond_bbox = label[:, :, :, :, 4:5]  # 1 with box correspondence and 0 not
         label_prob = label[:, :, :, :, 5:]
 
-        giou = tf.expand_dims(self.bbox_giou(pred_xywh, label_xywh), axis=-1)
+        giou = tf.expand_dims(bbox_tf.bbox_giou(pred_xywh, label_xywh), axis=-1)
         input_size = tf.cast(input_size, tf.float32)
 
         bbox_loss_scale = 2.0 - 1.0 * label_xywh[:, :, :, :, 2:3] * label_xywh[:, :, :, :, 3:4] / (input_size ** 2)
         giou_loss = respond_bbox * bbox_loss_scale * (1 - giou)
 
-        iou = self.bbox_iou(pred_xywh[:, :, :, :, np.newaxis, :], bboxes[:, np.newaxis, np.newaxis, np.newaxis, :, :])
+        iou = bbox_tf.bbox_iou(pred_xywh[:, :, :, :, np.newaxis, :], bboxes[:, np.newaxis, np.newaxis, np.newaxis, :, :])
         max_iou = tf.expand_dims(tf.reduce_max(iou, axis=-1), axis=-1)
 
         respond_bgd = (1.0 - respond_bbox) * tf.cast(max_iou < self.iou_loss_thresh, tf.float32)
@@ -193,7 +187,7 @@ class YoloV3(object):
 
 if __name__ == '__main__':
     xinputs = tf.placeholder(shape=[2, 416, 416, 3], dtype=tf.float32)
-    model = YoloV3(xinputs, trainable=True)
+    model = YoloV3(xinputs, num_classes=20, trainable=True)
 
     print(model.conv_sbbox)
     print(model.conv_mbbox)
